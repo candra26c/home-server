@@ -1,0 +1,22 @@
+services:
+  homarr:
+    image: ghcr.io/homarr-labs/homarr:latest
+    container_name: homarr
+    restart: unless-stopped
+    expose:
+      - "7575"
+    volumes:
+      - homarr-db:/appdata
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - TZ=Asia/Jakarta
+      - SECRET_ENCRYPTION_KEY=${SECRET_ENCRYPTION_KEY}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:7575"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  homarr-db:
