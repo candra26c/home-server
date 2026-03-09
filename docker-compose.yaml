@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  stirling-pdf:
+    image: frooodle/s-pdf:latest
+    container_name: stirling-pdf
+    restart: always
+    
+    # --- ENVIRONMENT SETTINGS ---
+    environment:
+      - DOCKER_ENABLE_SECURITY=false         # Set to 'true' to enable the login system
+      - INSTALL_BOOK_AND_ADVANCED_HTML_OPS=true # Powerful: Enables Calibre/LibreOffice
+      - LANGS=en_GB,id_ID                   # Powerful: OCR support for English & Indonesian
+      - APP_LOCALE=en_GB
+      - APP_NAME=PDF Toolkit - Your App
+      - APP_HOME_NAME=Your App Tools
+      - TZ=Asia/Jakarta
+
+    # --- PERSISTENCE ---
+    volumes:
+      - stirling_training_data:/usr/share/tessdata
+      - stirling_extra_configs:/configs
+      - stirling_logs:/logs
+
+    # --- DEVOPS BEST PRACTICES ---
+    deploy:
+      resources:
+        limits:
+          memory: 2G           # Prevents container from crashing your VPS during heavy OCR
+        reservations:
+          memory: 512M
+          
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+    # --- COOLIFY & TRAEFIK LABELS (Privacy Included) ---
+    labels:
+      - "traefik.enable=true"
+      # Change the Host below to your actual domain
+      - "traefik.http.routers.stirling-pdf.rule=Host(`pdf.yourdomain.com`) || Host(`www.pdf.yourdomain.com`)"
+      - "traefik.http.routers.stirling-pdf.entrypoints=websecure"
+      - "traefik.http.routers.stirling-pdf.tls=true"
+      - "traefik.http.routers.stirling-pdf.tls.certresolver=letsencrypt"
+      
+      # MIDDLEWARE: Invisible to Search Engines (The "No-Index" Shield)
+      - "traefik.http.middlewares.stirling-noindex.headers.customResponseHeaders.X-Robots-Tag=noindex, nofollow, nosnippet, noarchive"
+      - "traefik.http.routers.stirling-pdf.middlewares=stirling-noindex"
+      
+      # Port mapping for Traefik
+      - "traefik.http.services.stirling-pdf.loadbalancer.server.port=8080"
+
+volumes:
+  stirling_training_data:
+  stirling_extra_configs:
+  stirling_logs:
